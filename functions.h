@@ -9,6 +9,7 @@
 #define DATAGRAM_SIZE 1000
 #define HEADER_SIZE  2 * sizeof(int)
 #define DATA_SIZE (DATAGRAM_SIZE - HEADER_SIZE)
+#define WINDOW_SIZE 4
 
 void error(char *msg) 
 {

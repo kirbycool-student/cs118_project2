@@ -12,6 +12,11 @@
 int main(int argc, char *argv[]) {
     int sock, port, nbytes, size;
     struct sockaddr_in serv_addr, client_addr;
+    struct packet packets[WINDOW_SIZE];
+    int acks[WINDOW_SIZE];
+    char fileName[DATA_SIZE];
+
+
 
     if (argc < 2) {
          fprintf(stderr,"ERROR, no port provided\n");
@@ -35,9 +40,11 @@ int main(int argc, char *argv[]) {
         error("bind error");
     }
 
+
+    //wait for connections
     struct packet initPacket;
     bzero(initPacket.data,DATA_SIZE);
-    //wait for a packet
+
     fprintf (stderr, "waiting for message \n");
 
     size = sizeof(client_addr);
@@ -53,12 +60,16 @@ int main(int argc, char *argv[]) {
     inet_ntop(AF_INET, &(client_addr.sin_addr), addr, INET_ADDRSTRLEN);
 
     fprintf (stderr, "Sender: got message: %s From: %s : %d\n", initPacket.data, addr, client_addr.sin_port);
-       
+
+    //get the requested filename
+    strcpy(fileName, initPacket.data);
+    
+
+    //init connection by sending an ack   
     //seq stays the same 
     initPacket.ack = 1;  
     bzero(initPacket.data,DATA_SIZE);
  
-    //send the message
     size = sizeof(client_addr);
     if( nbytes = sendto (sock, &initPacket, DATAGRAM_SIZE, 0,
                     (struct sockaddr *) &client_addr , size) < 0)
@@ -70,6 +81,31 @@ int main(int argc, char *argv[]) {
     inet_ntop(AF_INET, &(client_addr.sin_addr), addr, INET_ADDRSTRLEN); 
     printf ("Sender: Sent ack for : %d To: %s : %d \n", initPacket.seq, addr, client_addr.sin_port);
 
+
+    //do some initialization of the packets
+
+        //create test packets
+        int k;
+        for(k = 0; k < WINDOW_SIZE; k++) {
+            acks[k] = 0;
+
+            struct packet p;
+            p.ack = 0;
+            p.seq = k+1;
+            strcpy(p.data, "this is a test");
+            packets[k] = p;
+        }
+
+    ///// send the first packets
+
+    ////////****** MAIN LOOP *********///////////
+    while(1) {
+        
+    
+    }
+
+
+/*
         struct packet message;
         message.ack = 0;
         message.seq = 1;
@@ -91,6 +127,7 @@ int main(int argc, char *argv[]) {
             printf ("Sender: Sent test message for : %d To: %s : %d \n", message.seq, addr, client_addr.sin_port);
             message.seq++;
         }
+
         struct packet ack;
         ack.seq = 0;
         while(ack.seq < 4)
@@ -116,4 +153,5 @@ int main(int argc, char *argv[]) {
                 fprintf (stderr, "Sender: message wasn't an ack From: %s : %d\n", addr, client_addr.sin_port);
             }
         }
+        */
 }
