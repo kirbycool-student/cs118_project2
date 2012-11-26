@@ -1,20 +1,20 @@
 CC = gcc
 CFLAGS = 
-SERVER_OBJS = server.o
-CLIENT_OBJS = client.o
+SENDER_OBJS = sender.o
+RECEIVER_OBJS = receiver.o
 
-all: server client
+all: sender receiver
 
-server: $(SERVER_OBJS)
-	$(CC) $(CFLAGS) $(SERVER_OBJS) -o server
-server.o: server.c
-	$(CC) $(CFLAGS) -c server.c -o server.o
+sender: $(SENDER_OBJS)
+	$(CC) $(CFLAGS) $(SENDER_OBJS) -o sender
+sender.o: sender.c
+	$(CC) $(CFLAGS) -c sender.c -o sender.o
 
-client: $(CLIENT_OBJS)
-	$(CC) $(CFLAGS) $(CLIENT_OBJS) -o client
-client.o: client.c
-	$(CC) $(CFLAGS) -c client.c -o client.o
+receiver: $(RECEIVER_OBJS)
+	$(CC) $(CFLAGS) $(RECEIVER_OBJS) -o receiver
+receiver.o: receiver.c
+	$(CC) $(CFLAGS) -c receiver.c -o receiver.o
 
 
 clean:
-	rm -f $(SERVER_OBJS) $(CLIENT_OBJS) server client
+	rm -f $(SENDER_OBJS) $(RECEIVER_OBJS) sender receiver
