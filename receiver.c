@@ -15,21 +15,16 @@ int main(int argc, char *argv[]) {
     struct sockaddr_in serv_addr;
     struct hostent *server;
 
-        if (argc < 4) {
+    if (argc < 4) {
        fprintf(stderr,"usage %s hostname port message\n", argv[0]);
        exit(0);
     }
-
     sock = socket(AF_INET, SOCK_DGRAM, 0);
-
     if (sock < 0) { 
         error("ERROR opening socket");
     }
-
     port = atoi(argv[2]);
-
     server = gethostbyname(argv[1]); 
-
     if (server == NULL) {
         fprintf(stderr,"ERROR, no such host\n");
         exit(0);
@@ -66,9 +61,14 @@ int main(int argc, char *argv[]) {
 
         //wait for a packet
         fprintf (stderr, "waiting for message \n");
+        struct packet incoming;
+        struct packet outgoing;
+        outgoing.ack = 1;
+        bzero(incoming.data,DATA_SIZE);
+        bzero(outgoing.data,DATA_SIZE);
 
         size = sizeof(serv_addr);
-        if( nbytes = recvfrom(sock, &initPacket, DATAGRAM_SIZE, 0, 
+        if( nbytes = recvfrom(sock, &incoming, DATAGRAM_SIZE, 0, 
                                 (struct sockaddr *) &serv_addr,
                                  &size) < 0)
         {
@@ -79,8 +79,26 @@ int main(int argc, char *argv[]) {
         char addr[256];
         inet_ntop(AF_INET, &(serv_addr.sin_addr), addr, INET_ADDRSTRLEN);
 
-        if (initPacket.ack == 1) fprintf (stderr, "Receiver: got ack for: %d From: %s : %d\n", initPacket.seq, addr, serv_addr.sin_port);
-        //fprintf (stderr, "Receiver: got message: %s From: %s : %d\n", buffer, addr, serv_addr.sin_port);
+        if (incoming.ack == 1) 
+        {
+            fprintf (stderr, "Receiver: got ack for: %d From: %s : %d\n", incoming.seq, addr, serv_addr.sin_port);
+        }
+        else  
+        {
+            fprintf (stderr, "Receiver: got test message for: %d From: %s : %d\n", incoming.seq, addr, serv_addr.sin_port);
+            outgoing.seq = incoming.seq;
+            //send the message
+            int size = sizeof(serv_addr);
+            if( nbytes = sendto (sock, &outgoing, DATAGRAM_SIZE, 0,
+                                (struct sockaddr *) &serv_addr , size) < 0)
+            {
+                error("sendto failed");
+            }    
+            //print diagnostic to console
+            char addr[256];
+            inet_ntop(AF_INET, &(serv_addr.sin_addr), addr, INET_ADDRSTRLEN); 
+            printf ("Receiver: Sent ack for: %d To: %s : %d \n", outgoing.seq, addr, serv_addr.sin_port);
 
-    }   //TODO: do useful stuff
+        }
+    }   
 }
