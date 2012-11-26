@@ -7,21 +7,13 @@
 #include <sys/wait.h>	/* for the waitpid() system call */
 #include <signal.h>	/* signal name macros, and the kill() prototype */
 #include <string.h>
-
-#define DATAGRAM_SIZE 1000
-
-void error(char *msg) {
-    perror(msg);
-    exit(1);
-}
+#include "functions.h"
 
 int main(int argc, char *argv[]) {
     int sock, port, nbytes, size;
     struct sockaddr_in serv_addr, client_addr;
 
-    char buffer[DATAGRAM_SIZE];
-
-    if (argc < 2) {
+        if (argc < 2) {
          fprintf(stderr,"ERROR, no port provided\n");
          exit(1);
     }
@@ -44,12 +36,13 @@ int main(int argc, char *argv[]) {
     }
 
     while(1) {
-
+        
+        struct packet initPacket;
         //wait for a packet
         fprintf (stderr, "waiting for message \n");
 
         size = sizeof(client_addr);
-        if( nbytes = recvfrom(sock, buffer, DATAGRAM_SIZE, 0, 
+        if( nbytes = recvfrom(sock, &initPacket, DATAGRAM_SIZE, 0, 
                                 (struct sockaddr *) &client_addr,
                                  &size) < 0)
         {
@@ -60,8 +53,23 @@ int main(int argc, char *argv[]) {
         char addr[256];
         inet_ntop(AF_INET, &(client_addr.sin_addr), addr, INET_ADDRSTRLEN);
 
-        fprintf (stderr, "Sender: got message: %s From: %s : %d\n", buffer, addr, client_addr.sin_port);
+        fprintf (stderr, "Sender: got message: %s From: %s : %d\n", initPacket.data, addr, client_addr.sin_port);
+        
+        initPacket.ack = 1;  
+     
+        //send the message
+        size = sizeof(client_addr);
+        if( nbytes = sendto (sock, &initPacket, DATAGRAM_SIZE, 0,
+                    (struct sockaddr *) &client_addr , size) < 0)
+        {
+            error("sendto failed");
+        }
 
-        //TODO: do useful stuff
+        //print diagnostic to console
+        inet_ntop(AF_INET, &(client_addr.sin_addr), addr, INET_ADDRSTRLEN); 
+
+        printf ("Sender: Sent ack for : %d To: %s : %d \n", initPacket.seq, addr, client_addr.sin_port);
+       // printf ("Sender: Sent message: %s To: %s : %d \n", buffer, addr, client_addr.sin_port);
+
     }
 }

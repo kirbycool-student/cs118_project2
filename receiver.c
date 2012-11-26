@@ -8,23 +8,15 @@
 #include <sys/wait.h>	/* for the waitpid() system call */
 #include <signal.h>	/* signal name macros, and the kill() prototype */
 #include <string.h>
-
-#define DATAGRAM_SIZE 1000
-
-void error(char *msg) {
-    perror(msg);
-    exit(1);
-}
+#include "functions.h"
 
 int main(int argc, char *argv[]) {
     int sock, port, nbytes;
     struct sockaddr_in serv_addr;
     struct hostent *server;
 
-    char buffer[DATAGRAM_SIZE] = "testing123";
-
-    if (argc < 3) {
-       fprintf(stderr,"usage %s hostname port\n", argv[0]);
+        if (argc < 4) {
+       fprintf(stderr,"usage %s hostname port message\n", argv[0]);
        exit(0);
     }
 
@@ -36,7 +28,7 @@ int main(int argc, char *argv[]) {
 
     port = atoi(argv[2]);
 
-    server = gethostbyname(argv[1]); //takes a string like "www.yahoo.com", and returns a struct hostent which contains information, as IP address, address type, the length of the addresses...
+    server = gethostbyname(argv[1]); 
 
     if (server == NULL) {
         fprintf(stderr,"ERROR, no such host\n");
@@ -49,10 +41,16 @@ int main(int argc, char *argv[]) {
     serv_addr.sin_port = htons(port);
 
     printf("port: %d \n", ntohs(serv_addr.sin_port));
+    
+    struct packet initPacket;
+    initPacket.ack = 0;
+    initPacket.seq = 1;
+    bzero(initPacket.data,DATA_SIZE);
+    strncpy(initPacket.data,argv[3],DATA_SIZE);
 
     //send the message
     int size = sizeof(serv_addr);
-    if( nbytes = sendto (sock, buffer, strlen(buffer), 0,
+    if( nbytes = sendto (sock, &initPacket, DATAGRAM_SIZE, 0,
                     (struct sockaddr *) &serv_addr , size) < 0)
     {
         error("sendto failed");
@@ -62,7 +60,27 @@ int main(int argc, char *argv[]) {
     char addr[256];
     inet_ntop(AF_INET, &(serv_addr.sin_addr), addr, INET_ADDRSTRLEN); 
 
-    printf ("Receiver: Sent message: %s To: %s : %d \n", buffer, addr, serv_addr.sin_port);
+    printf ("Receiver: Sent message: %s To: %s : %d \n", initPacket.data, addr, serv_addr.sin_port);
 
-    //TODO: do useful stuff
+    while(1) {
+
+        //wait for a packet
+        fprintf (stderr, "waiting for message \n");
+
+        size = sizeof(serv_addr);
+        if( nbytes = recvfrom(sock, &initPacket, DATAGRAM_SIZE, 0, 
+                                (struct sockaddr *) &serv_addr,
+                                 &size) < 0)
+        {
+            error("recvfrom failed");
+        }
+
+        //print diagnostic to console
+        char addr[256];
+        inet_ntop(AF_INET, &(serv_addr.sin_addr), addr, INET_ADDRSTRLEN);
+
+        if (initPacket.ack == 1) fprintf (stderr, "Receiver: got ack for: %d From: %s : %d\n", initPacket.seq, addr, serv_addr.sin_port);
+        //fprintf (stderr, "Receiver: got message: %s From: %s : %d\n", buffer, addr, serv_addr.sin_port);
+
+    }   //TODO: do useful stuff
 }
