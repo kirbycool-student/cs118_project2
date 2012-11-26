@@ -16,8 +16,8 @@ void error(char *msg) {
 }
 
 int main(int argc, char *argv[]) {
-    int sock, port, nbytes;
-    struct sockaddr_in serv_addr;
+    int sock, port, nbytes, size;
+    struct sockaddr_in serv_addr, client_addr;
 
     char buffer[DATAGRAM_SIZE];
 
@@ -37,19 +37,30 @@ int main(int argc, char *argv[]) {
     serv_addr.sin_addr.s_addr = INADDR_ANY;
     serv_addr.sin_port = htons(port);
 
+    //bind the socket
+    size = sizeof(serv_addr);
+    if ( bind(sock, (struct sockaddr*) &serv_addr, (socklen_t) size) < 0) {
+        error("bind error");
+    }
+
     while(1) {
 
         //wait for a packet
-        int size = sizeof(serv_addr);
+        fprintf (stderr, "waiting for message \n");
+
+        size = sizeof(client_addr);
         if( nbytes = recvfrom(sock, buffer, DATAGRAM_SIZE, 0, 
-                                (struct sockaddr *) &serv_addr,
+                                (struct sockaddr *) &client_addr,
                                  &size) < 0)
         {
             error("recvfrom failed");
         }
 
         //print diagnostic to console
-        fprintf (stderr, "Server: got message: %s\n", buffer);
+        char addr[256];
+        inet_ntop(AF_INET, &(client_addr.sin_addr), addr, INET_ADDRSTRLEN);
+
+        fprintf (stderr, "Sender: got message: %s From: %s : %d\n", buffer, addr, client_addr.sin_port);
 
         //TODO: do useful stuff
     }

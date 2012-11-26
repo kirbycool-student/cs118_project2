@@ -35,6 +35,7 @@ int main(int argc, char *argv[]) {
     }
 
     port = atoi(argv[2]);
+
     server = gethostbyname(argv[1]); //takes a string like "www.yahoo.com", and returns a struct hostent which contains information, as IP address, address type, the length of the addresses...
 
     if (server == NULL) {
@@ -47,6 +48,8 @@ int main(int argc, char *argv[]) {
     bcopy((char *)server->h_addr, (char *)&serv_addr.sin_addr.s_addr, server->h_length);
     serv_addr.sin_port = htons(port);
 
+    printf("port: %d \n", ntohs(serv_addr.sin_port));
+
     //send the message
     int size = sizeof(serv_addr);
     if( nbytes = sendto (sock, buffer, strlen(buffer), 0,
@@ -56,7 +59,10 @@ int main(int argc, char *argv[]) {
     }
 
     //print diagnostic to console
-    fprintf (stderr, "Client: Sent message: %s\n", buffer);
+    char addr[256];
+    inet_ntop(AF_INET, &(serv_addr.sin_addr), addr, INET_ADDRSTRLEN); 
+
+    printf ("Receiver: Sent message: %s To: %s : %d \n", buffer, addr, serv_addr.sin_port);
 
     //TODO: do useful stuff
 }
