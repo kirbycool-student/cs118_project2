@@ -10,7 +10,7 @@
 #include "functions.h"
 
 int main(int argc, char *argv[]) {
-    int sock, port, nbytes, size;
+    int sock, port, nbytes, size, base;
     struct sockaddr_in serv_addr, client_addr;
     struct packet packets[WINDOW_SIZE];
     int acks[WINDOW_SIZE];
@@ -79,12 +79,39 @@ int main(int argc, char *argv[]) {
 
     //print diagnostic to console
     inet_ntop(AF_INET, &(client_addr.sin_addr), addr, INET_ADDRSTRLEN); 
-    printf ("Sender: Sent ack for : %d To: %s : %d \n", initPacket.seq, addr, client_addr.sin_port);
+    printf ("Sender: Sent ack for : %d To: %s : %d  ", initPacket.seq, addr, client_addr.sin_port);
+
+    /////// FILE IO /////////
+    // open file
+    FILE * fd = fopen(fileName,"r");
+
+    if (fd == NULL) // open failed 
+    {
+        error("failed open file"); 
+    }
+
+    //initialize and send the first window of packets
+    base = 1;
+    int k;
+    for(k = 0; k < WINDOW_SIZE; k++) {
+        acks[k] = 0;
+
+        // get the next chunk of the file
+        char buffer[DATA_SIZE];
+        if( !fread(buffer, 1, DATA_SIZE, fd) ) {
+            //done reading file
+            break;
+        }
+
+        struct packet p;
+        p.ack = 0;
+        p.seq = k+1;
+        strcpy(p.data, buffer);
+        packets[k] = p;
+    }
 
 
-    //do some initialization of the packets
-
-        //create test packets
+        /*//create test packets
         int k;
         for(k = 0; k < WINDOW_SIZE; k++) {
             acks[k] = 0;
@@ -95,63 +122,98 @@ int main(int argc, char *argv[]) {
             strcpy(p.data, "this is a test");
             packets[k] = p;
         }
+        */
 
     ///// send the first packets
+    for(k = 0; k < WINDOW_SIZE; k++) {
+        
+        //send the message
+        size = sizeof(client_addr);
+        if( nbytes = sendto (sock, &packets[k], DATAGRAM_SIZE, 0,
+                (struct sockaddr *) &client_addr , size) < 0)
+        {
+            error("sendto failed");
+        }
+
+        //print diagnostic to console
+        inet_ntop(AF_INET, &(client_addr.sin_addr), addr, INET_ADDRSTRLEN); 
+        printf ("Sender: Sent test message for : %d To: %s : %d With Contents:\n%s\n", packets[k].seq, addr, client_addr.sin_port, packets[k].data);
+
+    }
 
     ////////****** MAIN LOOP *********///////////
+    // wait for acks
+    // when we receive an ack, update the packet window and send out the new packets
     while(1) {
         
+        struct packet ack;
+        int eof = 0;
+
+        //wait for packet
+        size = sizeof(client_addr);
+        if( nbytes = recvfrom(sock, &ack, DATAGRAM_SIZE, 0, 
+                             (struct sockaddr *) &client_addr,
+                             &size) < 0)
+        {
+            error("recvfrom failed");
+        }
+
+        //print diagnostic to console
+        char addr[256];
+        inet_ntop(AF_INET, &(client_addr.sin_addr), addr, INET_ADDRSTRLEN);
+        if( ack.ack == 1)
+        {
+            fprintf (stderr, "Sender: got ack for : %d From: %s : %d\n", ack.seq, addr, client_addr.sin_port);
+
+            if(ack.seq == base+WINDOW_SIZE && eof == 1)
+                break;
+            
+            // update the packets in the window and send new packets
+            if(base <= ack.seq) {
+                for(k=0; k < WINDOW_SIZE; k++) {
+                    if(packets[k].seq <= ack.seq ) {
+                        acks[k] = 0;
+
+                        //read the next chunk from the file
+                        char buffer[DATA_SIZE];
+                        if( !fread(buffer, 1, DATA_SIZE, fd) ) {
+                            //done reading file
+                            eof = 1;
+                            break;
+                        }
+
+                        //get the next packet
+                        struct packet p;
+                        p.ack = 0;
+                        p.seq = base + WINDOW_SIZE;
+                        strcpy(p.data, buffer);
+
+                        packets[k] = p;
+
+                        //send the packet
+                        size = sizeof(client_addr);
+                        if( nbytes = sendto (sock, &packets[k], DATAGRAM_SIZE, 0,
+                                (struct sockaddr *) &client_addr , size) < 0)
+                        {
+                            error("sendto failed");
+                        }
+
+                        //print diagnostic to console
+                        inet_ntop(AF_INET, &(client_addr.sin_addr), addr, INET_ADDRSTRLEN); 
+                        printf ("Sender: Sent test message for : %d To: %s : %d \n", packets[k].seq, addr, client_addr.sin_port);
+
+                        base++;
+                    }
+                }
+            }
+
+
+        }
+        else
+        {
+            fprintf (stderr, "Sender: message wasn't an ack From: %s : %d\n", addr, client_addr.sin_port);
+        }
     
     }
 
-
-/*
-        struct packet message;
-        message.ack = 0;
-        message.seq = 1;
-        bzero(message.data,DATA_SIZE);
-        strcpy(message.data,"test message");
-    
-        while(message.seq < 4)
-        {
-            //send the message
-            size = sizeof(client_addr);
-            if( nbytes = sendto (sock, &message, DATAGRAM_SIZE, 0,
-                    (struct sockaddr *) &client_addr , size) < 0)
-            {
-                error("sendto failed");
-            }
-
-            //print diagnostic to console
-            inet_ntop(AF_INET, &(client_addr.sin_addr), addr, INET_ADDRSTRLEN); 
-            printf ("Sender: Sent test message for : %d To: %s : %d \n", message.seq, addr, client_addr.sin_port);
-            message.seq++;
-        }
-
-        struct packet ack;
-        ack.seq = 0;
-        while(ack.seq < 4)
-        {
-            //wait for a packet
-            fprintf (stderr, "waiting for message \n");
-            size = sizeof(client_addr);
-            if( nbytes = recvfrom(sock, &ack, DATAGRAM_SIZE, 0, 
-                                 (struct sockaddr *) &client_addr,
-                                 &size) < 0)
-            {
-                error("recvfrom failed");
-            }
-            //print diagnostic to console
-            char addr[256];
-            inet_ntop(AF_INET, &(client_addr.sin_addr), addr, INET_ADDRSTRLEN);
-            if( ack.ack == 1)
-            {
-                fprintf (stderr, "Sender: got ack for : %d From: %s : %d\n", ack.seq, addr, client_addr.sin_port);
-            }
-            else
-            {
-                fprintf (stderr, "Sender: message wasn't an ack From: %s : %d\n", addr, client_addr.sin_port);
-            }
-        }
-        */
 }
