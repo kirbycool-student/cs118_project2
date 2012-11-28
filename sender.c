@@ -16,7 +16,7 @@ int main(int argc, char *argv[]) {
     int acks[WINDOW_SIZE];
     char fileName[DATA_SIZE];
 
-
+    int eof = 0; //yuck, hack
 
     if (argc < 2) {
          fprintf(stderr,"ERROR, no port provided\n");
@@ -100,6 +100,7 @@ int main(int argc, char *argv[]) {
         char buffer[DATA_SIZE];
         if( !fread(buffer, 1, DATA_SIZE, fd) ) {
             //done reading file
+            eof = 1;
             break;
         }
 
@@ -129,7 +130,6 @@ int main(int argc, char *argv[]) {
     while(1) {
         
         struct packet ack;
-        int eof = 0;
 
         //wait for packet
         size = sizeof(client_addr);
