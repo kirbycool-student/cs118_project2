@@ -108,26 +108,8 @@ int main(int argc, char *argv[]) {
         p.seq = k+1;
         strcpy(p.data, buffer);
         packets[k] = p;
-    }
 
-
-        /*//create test packets
-        int k;
-        for(k = 0; k < WINDOW_SIZE; k++) {
-            acks[k] = 0;
-
-            struct packet p;
-            p.ack = 0;
-            p.seq = k+1;
-            strcpy(p.data, "this is a test");
-            packets[k] = p;
-        }
-        */
-
-    ///// send the first packets
-    for(k = 0; k < WINDOW_SIZE; k++) {
-        
-        //send the message
+        //send the packet
         size = sizeof(client_addr);
         if( nbytes = sendto (sock, &packets[k], DATAGRAM_SIZE, 0,
                 (struct sockaddr *) &client_addr , size) < 0)
@@ -138,8 +120,8 @@ int main(int argc, char *argv[]) {
         //print diagnostic to console
         inet_ntop(AF_INET, &(client_addr.sin_addr), addr, INET_ADDRSTRLEN); 
         printf ("Sender: Sent test message for : %d To: %s : %d With Contents:\n%s\n", packets[k].seq, addr, client_addr.sin_port, packets[k].data);
-
     }
+
 
     ////////****** MAIN LOOP *********///////////
     // wait for acks
@@ -177,7 +159,8 @@ int main(int argc, char *argv[]) {
                         //read the next chunk from the file
                         char buffer[DATA_SIZE];
                         if( !fread(buffer, 1, DATA_SIZE, fd) ) {
-                            //done reading file
+                            //done reading file, so close it
+                            fclose(fd);
                             eof = 1;
                             break;
                         }
