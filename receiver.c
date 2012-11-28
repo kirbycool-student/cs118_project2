@@ -109,9 +109,10 @@ int main(int argc, char *argv[]) {
             fprintf (stderr, "Receiver: test message data: %s From: %s : %d\n", incoming.data, addr, serv_addr.sin_port);
    
             //write data to file 
-            if ( ! fwrite(incoming.data,1,DATA_SIZE,fd )) {
-                error("write error");
-            }
+            char buffer[DATA_SIZE];
+            strcpy(buffer,incoming.data);
+            fwrite(buffer,1,strlen(buffer),fd);  //fix with real pkt sizes
+            fclose(fd);//remove later
 
             //send corresponding ack 
             outgoing.seq = incoming.seq;
