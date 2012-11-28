@@ -32,7 +32,16 @@ int main(int argc, char *argv[]) {
         fprintf(stderr,"ERROR, no such host\n");
         exit(0);
     }
+    
+    /////// FILE IO /////////
+    // open file
+    FILE * fd = fopen(argv[3],"w");
+    if (fd == NULL) // open failed 
+    {
+        error("failed open file"); 
+    }
 
+    ///init
     bzero((char *) &serv_addr, sizeof(serv_addr));
     serv_addr.sin_family = AF_INET; //initialize server's address
     bcopy((char *)server->h_addr, (char *)&serv_addr.sin_addr.s_addr, server->h_length);
@@ -88,10 +97,21 @@ int main(int argc, char *argv[]) {
         {
             fprintf (stderr, "Receiver: got ack for: %d From: %s : %d\n", incoming.seq, addr, serv_addr.sin_port);
         }
+        else if (incoming.fin == 1)
+        {
+            fprintf (stderr, "Receiver: got fin :  From: %s : %d\n", addr, serv_addr.sin_port);
+            fclose(fd);
+        } 
         else  
         // data packet
         {
             fprintf (stderr, "Receiver: got test message for: %d From: %s : %d\n", incoming.seq, addr, serv_addr.sin_port);
+            fprintf (stderr, "Receiver: test message data: %s From: %s : %d\n", incoming.data, addr, serv_addr.sin_port);
+   
+            //write data to file 
+            if ( ! fwrite(incoming.data,1,DATA_SIZE,fd )) {
+                error("write error");
+            }
 
             //send corresponding ack 
             outgoing.seq = incoming.seq;

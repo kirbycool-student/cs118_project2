@@ -7,7 +7,7 @@
 #include <string.h>
 
 #define DATAGRAM_SIZE 1000
-#define HEADER_SIZE  2 * sizeof(int)
+#define HEADER_SIZE  2 * sizeof(short) + sizeof(int)
 #define DATA_SIZE (DATAGRAM_SIZE - HEADER_SIZE)
 #define WINDOW_SIZE 4
 
@@ -19,7 +19,8 @@ void error(char *msg)
 
 struct packet
 {
-    int ack;
+    short ack;
+    short fin;
     int seq;
     char data[DATA_SIZE]; 
 };
