@@ -111,9 +111,7 @@ int main(int argc, char *argv[]) {
         {
             fprintf (stderr, "Receiver: got test message From: %s : %d\n", addr, serv_addr.sin_port);
             dump(&incoming);
-            if (DEBUG) {
-                fprintf (stderr, "Receiver: test message data: %s From: %s : %d\n", incoming.data, addr, serv_addr.sin_port);
-            } 
+
             //write data to file 
             fwrite(incoming.data,1,incoming.size,fd);  
 

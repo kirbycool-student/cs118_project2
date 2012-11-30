@@ -112,7 +112,7 @@ int main(int argc, char *argv[]) {
 
         //print diagnostic to console
         inet_ntop(AF_INET, &(client_addr.sin_addr), addr, INET_ADDRSTRLEN); 
-        printf ("Sender: Sent test message to: %s : %d With Contents:\n%s\n", addr, client_addr.sin_port, packets[k].data);
+        printf ("Sender: Sent test message to: %s : %d :\n", addr, client_addr.sin_port);
         dump(&packets[k]);
 
         if(feof(fd) || ferror(fd) ) {
@@ -143,9 +143,7 @@ int main(int argc, char *argv[]) {
             }
             //print diagnostic to console
             inet_ntop(AF_INET, &(client_addr.sin_addr), addr, INET_ADDRSTRLEN); 
-            if ( DEBUG) {
-                printf ("Sender: Sent termination: To: %s : %d \n", addr, client_addr.sin_port);
-            }
+            printf ("Sender: Sent termination: To: %s : %d \n", addr, client_addr.sin_port);
             dump(&terminate);
             break;
         }
@@ -199,9 +197,6 @@ int main(int argc, char *argv[]) {
                         //print diagnostic to console
                         inet_ntop(AF_INET, &(client_addr.sin_addr), addr, INET_ADDRSTRLEN); 
                         printf ("Sender: Sent test message To: %s : %d \n", addr, client_addr.sin_port);
-                        if (DEBUG) {
-                            fprintf (stderr, "Sender: test message data: %s From: %s : %d\n", packets[k].data, addr, serv_addr.sin_port);
-                        }
                         dump(&packets[k]);
 
                         base++;

@@ -10,7 +10,7 @@
 #define HEADER_SIZE  (2 * sizeof(short) + 2 * sizeof(int))
 #define DATA_SIZE (DATAGRAM_SIZE - HEADER_SIZE)
 #define WINDOW_SIZE 4
-#define DEBUG 0
+#define DEBUG 1
 
 void error(char *msg) 
 {
@@ -29,11 +29,14 @@ struct packet
 
 void initPacket(struct packet * pkt)
 {
-    pkt->ack = 0;
-    pkt->fin = 0;
-    pkt->seq = 0;
-    pkt->size = 0;
-    memset(pkt->data,0,DATA_SIZE);
+    if (DEBUG) {
+
+        pkt->ack = 0;
+        pkt->fin = 0;
+        pkt->seq = 0;
+        pkt->size = 0;
+        memset(pkt->data,0,DATA_SIZE);
+    }
 }
 
 void dump(struct packet * pkt)
