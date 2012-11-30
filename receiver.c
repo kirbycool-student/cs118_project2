@@ -49,15 +49,14 @@ int main(int argc, char *argv[]) {
     printf("port: %d \n", ntohs(serv_addr.sin_port));
     
 //******************handshake**********************************//
-    struct packet initPacket;
-    initPacket.ack = 0;
-    initPacket.seq = 1;
-    bzero(initPacket.data,DATA_SIZE);
-    strncpy(initPacket.data,argv[3],DATA_SIZE);
+    struct packet handshake;
+    initPacket(&handshake);
+    handshake.seq = 1;
+    strncpy(handshake.data,argv[3],DATA_SIZE);
 
     //send the message
     int size = sizeof(serv_addr);
-    if( nbytes = sendto (sock, &initPacket, DATAGRAM_SIZE, 0,
+    if( nbytes = sendto (sock, &handshake, DATAGRAM_SIZE, 0,
                     (struct sockaddr *) &serv_addr , size) < 0)
     {
         error("sendto failed");
@@ -66,16 +65,16 @@ int main(int argc, char *argv[]) {
     //print diagnostic to console
     char addr[256];
     inet_ntop(AF_INET, &(serv_addr.sin_addr), addr, INET_ADDRSTRLEN); 
-    printf ("Receiver: Sent message: %s To: %s : %d \n", initPacket.data, addr, serv_addr.sin_port);
+    printf ("Receiver: Sent message: %s To: %s : %d \n", handshake.data, addr, serv_addr.sin_port);
 
 //******************main loop for receiving data*******************//
 
     fprintf (stderr, "waiting for message \n");
     struct packet incoming;
     struct packet outgoing;
+    initPacket(&incoming);
+    initPacket(&outgoing);
     outgoing.ack = 1;
-    bzero(incoming.data,DATA_SIZE);
-    bzero(outgoing.data,DATA_SIZE);
 
     while(1) {
 
@@ -110,8 +109,9 @@ int main(int argc, char *argv[]) {
    
             //write data to file 
             char buffer[DATA_SIZE];
-            strcpy(buffer,incoming.data);
-            fwrite(buffer,1,strlen(buffer),fd);  //fix with real pkt sizes
+            //strcpy(buffer,incoming.data);
+            //fwrite(buffer,1,strlen(buffer),fd);  //fix with real pkt sizes
+            fwrite(incoming.data,1,DATA_SIZE,fd);  //fix with real pkt sizes
             fclose(fd);//remove later
 
             //send corresponding ack 

@@ -42,13 +42,12 @@ int main(int argc, char *argv[]) {
 
 
     //wait for connections
-    struct packet initPacket;
-    bzero(initPacket.data,DATA_SIZE);
+    struct packet handshake;
 
     fprintf (stderr, "waiting for message \n");
 
     size = sizeof(client_addr);
-    if( nbytes = recvfrom(sock, &initPacket, DATAGRAM_SIZE, 0, 
+    if( nbytes = recvfrom(sock, &handshake, DATAGRAM_SIZE, 0, 
                                 (struct sockaddr *) &client_addr,
                                  &size) < 0)
     {
@@ -59,19 +58,18 @@ int main(int argc, char *argv[]) {
     char addr[256];
     inet_ntop(AF_INET, &(client_addr.sin_addr), addr, INET_ADDRSTRLEN);
 
-    fprintf (stderr, "Sender: got message: %s From: %s : %d\n", initPacket.data, addr, client_addr.sin_port);
+    fprintf (stderr, "Sender: got message: %s From: %s : %d\n", handshake.data, addr, client_addr.sin_port);
 
     //get the requested filename
-    strcpy(fileName, initPacket.data);
+    strcpy(fileName, handshake.data);
     
 
     //init connection by sending an ack   
     //seq stays the same 
-    initPacket.ack = 1;  
-    bzero(initPacket.data,DATA_SIZE);
+    handshake.ack = 1;  
  
     size = sizeof(client_addr);
-    if( nbytes = sendto (sock, &initPacket, DATAGRAM_SIZE, 0,
+    if( nbytes = sendto (sock, &handshake, DATAGRAM_SIZE, 0,
                     (struct sockaddr *) &client_addr , size) < 0)
     {
         error("sendto failed");
@@ -79,7 +77,7 @@ int main(int argc, char *argv[]) {
 
     //print diagnostic to console
     inet_ntop(AF_INET, &(client_addr.sin_addr), addr, INET_ADDRSTRLEN); 
-    printf ("Sender: Sent ack for : %d To: %s : %d  ", initPacket.seq, addr, client_addr.sin_port);
+    printf ("Sender: Sent ack for : %d To: %s : %d  ", handshake.seq, addr, client_addr.sin_port);
 
     /////// FILE IO /////////
     // open file
@@ -98,16 +96,19 @@ int main(int argc, char *argv[]) {
 
         // get the next chunk of the file
         char buffer[DATA_SIZE];
-        if( !fread(buffer, 1, DATA_SIZE, fd) ) {
+        int bytesRead;
+        bytesRead = fread(buffer, 1, DATA_SIZE, fd);
+        if(bytesRead == 0) {
             //done reading file
             eof = 1;
             break;
         }
 
         struct packet p;
-        p.ack = 0;
+        initPacket(&p);
         p.seq = k+1;
-        strcpy(p.data, buffer);
+        memcpy(p.data, buffer,bytesRead);
+        printf ("buffer is %s \n", buffer);
         packets[k] = p;
 
         //send the packet
@@ -130,6 +131,7 @@ int main(int argc, char *argv[]) {
     while(1) {
         
         struct packet ack;
+        initPacket(&ack);
 
         //wait for packet
         size = sizeof(client_addr);
