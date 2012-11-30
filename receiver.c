@@ -17,6 +17,7 @@ int main(int argc, char *argv[]) {
     struct sockaddr_in serv_addr;
     struct hostent *server;
 
+    fprintf(stderr,"header:%d data:%d \n",HEADER_SIZE,DATA_SIZE);
     //usage
     if (argc < 4) {
        fprintf(stderr,"usage %s hostname port message\n", argv[0]);
@@ -52,6 +53,7 @@ int main(int argc, char *argv[]) {
     struct packet handshake;
     initPacket(&handshake);
     strncpy(handshake.data,argv[3],DATA_SIZE);
+    handshake.size = strlen(argv[3]);
 
     //send the message
     int size = sizeof(serv_addr);
@@ -109,13 +111,11 @@ int main(int argc, char *argv[]) {
         {
             fprintf (stderr, "Receiver: got test message From: %s : %d\n", addr, serv_addr.sin_port);
             dump(&incoming);
-            fprintf (stderr, "Receiver: test message data: %s From: %s : %d\n", incoming.data, addr, serv_addr.sin_port);
-   
+            if (DEBUG) {
+                fprintf (stderr, "Receiver: test message data: %s From: %s : %d\n", incoming.data, addr, serv_addr.sin_port);
+            } 
             //write data to file 
-            char buffer[DATA_SIZE];
-            //strcpy(buffer,incoming.data);
-            //fwrite(buffer,1,strlen(buffer),fd);  //fix with real pkt sizes
-            fwrite(incoming.data,1,DATA_SIZE,fd);  //fix with real pkt sizes
+            fwrite(incoming.data,1,incoming.size,fd);  
 
             //send corresponding ack 
             outgoing.seq = incoming.seq;

@@ -16,8 +16,6 @@ int main(int argc, char *argv[]) {
     int acks[WINDOW_SIZE];
     char fileName[DATA_SIZE];
 
-    int eof = 0; //yuck, hack
-
     if (argc < 2) {
          fprintf(stderr,"ERROR, no port provided\n");
          exit(1);
@@ -64,7 +62,6 @@ int main(int argc, char *argv[]) {
     //get the requested filename
     strcpy(fileName, handshake.data);
     
-
     //init connection by sending an ack   
     //seq stays the same 
     handshake.ack = 1;  
@@ -97,19 +94,12 @@ int main(int argc, char *argv[]) {
         acks[k] = 0;
 
         // get the next chunk of the file
-        char buffer[DATA_SIZE];
-        int bytesRead;
-        bytesRead = fread(buffer, 1, DATA_SIZE, fd);
-        if(bytesRead == 0) {
-            //done reading file
-            eof = 1;
-            break;
-        }
-
         struct packet p;
         initPacket(&p);
+
         p.seq = k+1;
-        memcpy(p.data, buffer,bytesRead);
+        p.size = fread(p.data, 1, DATA_SIZE, fd);
+        printf ("Sender: size is %d\n", p.size);
         packets[k] = p;
 
         //send the packet
@@ -124,7 +114,13 @@ int main(int argc, char *argv[]) {
         inet_ntop(AF_INET, &(client_addr.sin_addr), addr, INET_ADDRSTRLEN); 
         printf ("Sender: Sent test message to: %s : %d With Contents:\n%s\n", addr, client_addr.sin_port, packets[k].data);
         dump(&packets[k]);
-    }
+
+        if(feof(fd) || ferror(fd) ) {
+            //done reading file
+            break;
+        }
+
+   }
 
 
     ////////****** MAIN LOOP *********///////////
@@ -133,7 +129,8 @@ int main(int argc, char *argv[]) {
     while(1) {
 
         //if file is empty or done reading, terminate connection
-        if(eof == 1) {
+        if(feof(fd)) {
+            fclose(fd);
             struct packet terminate;
             initPacket(&terminate);
             terminate.fin = 1;
@@ -146,7 +143,9 @@ int main(int argc, char *argv[]) {
             }
             //print diagnostic to console
             inet_ntop(AF_INET, &(client_addr.sin_addr), addr, INET_ADDRSTRLEN); 
-            printf ("Sender: Sent termination: To: %s : %d \n", addr, client_addr.sin_port);
+            if ( DEBUG) {
+                printf ("Sender: Sent termination: To: %s : %d \n", addr, client_addr.sin_port);
+            }
             dump(&terminate);
             break;
         }
@@ -177,21 +176,11 @@ int main(int argc, char *argv[]) {
                     if(packets[k].seq <= ack.seq ) {
                         acks[k] = 0;
 
-                        //read the next chunk from the file
-                        char buffer[DATA_SIZE];
-                        if( !fread(buffer, 1, DATA_SIZE, fd) ) {
-                            //done reading file, so close it
-                            fclose(fd);
-                            eof = 1;
-                            break;
-                        }
-
                         //get the next packet
                         struct packet p;
-                        p.ack = 0;
                         p.seq = base + WINDOW_SIZE;
-                        strcpy(p.data, buffer);
-
+                        //read the next chunk from the file
+                        p.size = fread(p.data, 1, DATA_SIZE, fd);
                         packets[k] = p;
 
                         //send the packet
@@ -202,9 +191,17 @@ int main(int argc, char *argv[]) {
                             error("sendto failed");
                         }
 
+                        if(feof(fd) || ferror(fd) ) {
+                            //done reading file
+                            break;
+                        }
+
                         //print diagnostic to console
                         inet_ntop(AF_INET, &(client_addr.sin_addr), addr, INET_ADDRSTRLEN); 
                         printf ("Sender: Sent test message To: %s : %d \n", addr, client_addr.sin_port);
+                        if (DEBUG) {
+                            fprintf (stderr, "Sender: test message data: %s From: %s : %d\n", packets[k].data, addr, serv_addr.sin_port);
+                        }
                         dump(&packets[k]);
 
                         base++;

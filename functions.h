@@ -7,9 +7,10 @@
 #include <string.h>
 
 #define DATAGRAM_SIZE 1000
-#define HEADER_SIZE  2 * sizeof(short) + 2 * sizeof(int)
+#define HEADER_SIZE  (2 * sizeof(short) + 2 * sizeof(int))
 #define DATA_SIZE (DATAGRAM_SIZE - HEADER_SIZE)
 #define WINDOW_SIZE 4
+#define DEBUG 0
 
 void error(char *msg) 
 {
@@ -22,6 +23,7 @@ struct packet
     short ack;
     short fin;
     int seq;
+    int size;
     char data[DATA_SIZE]; 
 };
 
@@ -30,11 +32,12 @@ void initPacket(struct packet * pkt)
     pkt->ack = 0;
     pkt->fin = 0;
     pkt->seq = 0;
-    bzero(pkt->data,DATA_SIZE);
+    pkt->size = 0;
+    memset(pkt->data,0,DATA_SIZE);
 }
 
 void dump(struct packet * pkt)
 {
-    printf("ack: %d, fin: %d, seq: %d, \n",pkt->ack,pkt->fin,pkt->seq);
+    printf("ack: %d, fin: %d, seq: %d, size: %d \n",pkt->ack,pkt->fin,pkt->seq,pkt->size);
 }
 
