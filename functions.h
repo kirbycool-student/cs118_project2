@@ -33,4 +33,8 @@ void initPacket(struct packet * pkt)
     bzero(pkt->data,DATA_SIZE);
 }
 
+void dump(struct packet * pkt)
+{
+    printf("ack: %d, fin: %d, seq: %d, \n",pkt->ack,pkt->fin,pkt->seq);
+}
 

@@ -59,6 +59,7 @@ int main(int argc, char *argv[]) {
     inet_ntop(AF_INET, &(client_addr.sin_addr), addr, INET_ADDRSTRLEN);
 
     fprintf (stderr, "Sender: got message: %s From: %s : %d\n", handshake.data, addr, client_addr.sin_port);
+    dump(&handshake);
 
     //get the requested filename
     strcpy(fileName, handshake.data);
@@ -78,6 +79,7 @@ int main(int argc, char *argv[]) {
     //print diagnostic to console
     inet_ntop(AF_INET, &(client_addr.sin_addr), addr, INET_ADDRSTRLEN); 
     printf ("Sender: Sent ack for : %d To: %s : %d  ", handshake.seq, addr, client_addr.sin_port);
+    dump(&handshake);
 
     /////// FILE IO /////////
     // open file
@@ -108,7 +110,6 @@ int main(int argc, char *argv[]) {
         initPacket(&p);
         p.seq = k+1;
         memcpy(p.data, buffer,bytesRead);
-        printf ("buffer is %s \n", buffer);
         packets[k] = p;
 
         //send the packet
@@ -121,7 +122,8 @@ int main(int argc, char *argv[]) {
 
         //print diagnostic to console
         inet_ntop(AF_INET, &(client_addr.sin_addr), addr, INET_ADDRSTRLEN); 
-        printf ("Sender: Sent test message for : %d To: %s : %d With Contents:\n%s\n", packets[k].seq, addr, client_addr.sin_port, packets[k].data);
+        printf ("Sender: Sent test message to: %s : %d With Contents:\n%s\n", addr, client_addr.sin_port, packets[k].data);
+        dump(&packets[k]);
     }
 
 
@@ -129,7 +131,26 @@ int main(int argc, char *argv[]) {
     // wait for acks
     // when we receive an ack, update the packet window and send out the new packets
     while(1) {
-        
+
+        //if file is empty or done reading, terminate connection
+        if(eof == 1) {
+            struct packet terminate;
+            initPacket(&terminate);
+            terminate.fin = 1;
+            //send the packet
+            size = sizeof(client_addr);
+            if( nbytes = sendto (sock, &terminate, DATAGRAM_SIZE, 0,
+                    (struct sockaddr *) &client_addr , size) < 0)
+            {
+                error("sendto failed");
+            }
+            //print diagnostic to console
+            inet_ntop(AF_INET, &(client_addr.sin_addr), addr, INET_ADDRSTRLEN); 
+            printf ("Sender: Sent termination: To: %s : %d \n", addr, client_addr.sin_port);
+            dump(&terminate);
+            break;
+        }
+
         struct packet ack;
         initPacket(&ack);
 
@@ -147,11 +168,9 @@ int main(int argc, char *argv[]) {
         inet_ntop(AF_INET, &(client_addr.sin_addr), addr, INET_ADDRSTRLEN);
         if( ack.ack == 1)
         {
-            fprintf (stderr, "Sender: got ack for : %d From: %s : %d\n", ack.seq, addr, client_addr.sin_port);
+            fprintf (stderr, "Sender: got ack From: %s : %d\n", addr, client_addr.sin_port);
+            dump(&ack);
 
-            if(ack.seq == base+WINDOW_SIZE && eof == 1)
-                break;
-            
             // update the packets in the window and send new packets
             if(base <= ack.seq) {
                 for(k=0; k < WINDOW_SIZE; k++) {
@@ -185,7 +204,8 @@ int main(int argc, char *argv[]) {
 
                         //print diagnostic to console
                         inet_ntop(AF_INET, &(client_addr.sin_addr), addr, INET_ADDRSTRLEN); 
-                        printf ("Sender: Sent test message for : %d To: %s : %d \n", packets[k].seq, addr, client_addr.sin_port);
+                        printf ("Sender: Sent test message To: %s : %d \n", addr, client_addr.sin_port);
+                        dump(&packets[k]);
 
                         base++;
                     }
@@ -197,6 +217,7 @@ int main(int argc, char *argv[]) {
         else
         {
             fprintf (stderr, "Sender: message wasn't an ack From: %s : %d\n", addr, client_addr.sin_port);
+            dump(&ack);
         }
     
     }

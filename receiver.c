@@ -33,7 +33,7 @@ int main(int argc, char *argv[]) {
         exit(0);
     }
     
-    /////// FILE IO /////////
+    //FILE IO 
     // open file
     FILE * fd = fopen(argv[3],"w");
     if (fd == NULL) // open failed 
@@ -51,7 +51,6 @@ int main(int argc, char *argv[]) {
 //******************handshake**********************************//
     struct packet handshake;
     initPacket(&handshake);
-    handshake.seq = 1;
     strncpy(handshake.data,argv[3],DATA_SIZE);
 
     //send the message
@@ -66,6 +65,7 @@ int main(int argc, char *argv[]) {
     char addr[256];
     inet_ntop(AF_INET, &(serv_addr.sin_addr), addr, INET_ADDRSTRLEN); 
     printf ("Receiver: Sent message: %s To: %s : %d \n", handshake.data, addr, serv_addr.sin_port);
+    dump(&handshake);
 
 //******************main loop for receiving data*******************//
 
@@ -94,17 +94,21 @@ int main(int argc, char *argv[]) {
         if (incoming.ack == 1) 
         //first pkt is ack of request
         {
-            fprintf (stderr, "Receiver: got ack for: %d From: %s : %d\n", incoming.seq, addr, serv_addr.sin_port);
+            fprintf (stderr, "Receiver: got ack From: %s : %d\n", addr, serv_addr.sin_port);
+            dump(&incoming);
         }
         else if (incoming.fin == 1)
         {
             fprintf (stderr, "Receiver: got fin :  From: %s : %d\n", addr, serv_addr.sin_port);
+            dump(&incoming);
             fclose(fd);
+            break;
         } 
         else  
         // data packet
         {
-            fprintf (stderr, "Receiver: got test message for: %d From: %s : %d\n", incoming.seq, addr, serv_addr.sin_port);
+            fprintf (stderr, "Receiver: got test message From: %s : %d\n", addr, serv_addr.sin_port);
+            dump(&incoming);
             fprintf (stderr, "Receiver: test message data: %s From: %s : %d\n", incoming.data, addr, serv_addr.sin_port);
    
             //write data to file 
@@ -112,7 +116,6 @@ int main(int argc, char *argv[]) {
             //strcpy(buffer,incoming.data);
             //fwrite(buffer,1,strlen(buffer),fd);  //fix with real pkt sizes
             fwrite(incoming.data,1,DATA_SIZE,fd);  //fix with real pkt sizes
-            fclose(fd);//remove later
 
             //send corresponding ack 
             outgoing.seq = incoming.seq;
@@ -126,7 +129,8 @@ int main(int argc, char *argv[]) {
             //print diagnostic to console
             char addr[256];
             inet_ntop(AF_INET, &(serv_addr.sin_addr), addr, INET_ADDRSTRLEN); 
-            printf ("Receiver: Sent ack for: %d To: %s : %d \n", outgoing.seq, addr, serv_addr.sin_port);
+            printf ("Receiver: Sent ack to: %s : %d \n", addr, serv_addr.sin_port);
+            dump(&outgoing);
         }
     }   
 }
