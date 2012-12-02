@@ -98,27 +98,27 @@ int main(int argc, char *argv[]) {
         char addr[256];
         inet_ntop(AF_INET, &(serv_addr.sin_addr), addr, INET_ADDRSTRLEN);
 
-        //corrupt packet
         if (prob(CORRUPT_PROB)) {
+            //corrupt packet
             fprintf(stderr, "packet was corrupted\n");
         }
-
         else if (incoming.ack == 1) 
-        //first pkt is ack of request
         {
+            //first pkt is ack of request
             fprintf (stderr, "Receiver: got ack From: %s : %d\n", addr, serv_addr.sin_port);
             dump(&incoming);
         }
         else if (incoming.fin == 1)
         {
+            //terminate connection
             fprintf (stderr, "Receiver: got fin :  From: %s : %d\n", addr, serv_addr.sin_port);
             dump(&incoming);
             fclose(fd);
             break;
         } 
         else  
-        // data packet
         {
+            // data packet
             fprintf (stderr, "Receiver: got test message From: %s : %d\n", addr, serv_addr.sin_port);
             dump(&incoming);
 

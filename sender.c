@@ -12,12 +12,9 @@
 int main(int argc, char *argv[]) {
     int sock, port, nbytes, size, base;
     struct sockaddr_in serv_addr, client_addr;
-    struct packet packets[WINDOW_SIZE];
-    int acks[WINDOW_SIZE];
-    char fileName[DATA_SIZE];
 
-    if (argc < 2) {
-         fprintf(stderr,"ERROR, no port provided\n");
+    if (argc < 3) {
+         fprintf(stderr,"usage %s port CWind\n", argv[0]);
          exit(1);
     }
 
@@ -37,7 +34,11 @@ int main(int argc, char *argv[]) {
     if ( bind(sock, (struct sockaddr*) &serv_addr, (socklen_t) size) < 0) {
         error("bind error");
     }
-
+ 
+    int windowSize = atoi(argv[2]);
+    struct packet packets[windowSize];
+    int acks[windowSize];
+    char fileName[DATA_SIZE];
 
     //wait for connections
     struct packet handshake;
@@ -90,7 +91,7 @@ int main(int argc, char *argv[]) {
     //initialize and send the first window of packets
     base = 1;
     int k;
-    for(k = 0; k < WINDOW_SIZE; k++) {
+    for(k = 0; k < windowSize; k++) {
         acks[k] = 0;
 
         // get the next chunk of the file
@@ -170,13 +171,13 @@ int main(int argc, char *argv[]) {
 
             // update the packets in the window and send new packets
             if(base <= ack.seq) {
-                for(k=0; k < WINDOW_SIZE; k++) {
+                for(k=0; k < windowSize; k++) {
                     if(packets[k].seq <= ack.seq ) {
                         acks[k] = 0;
 
                         //get the next packet
                         struct packet p;
-                        p.seq = base + WINDOW_SIZE;
+                        p.seq = base + windowSize;
                         //read the next chunk from the file
                         p.size = fread(p.data, 1, DATA_SIZE, fd);
                         packets[k] = p;
