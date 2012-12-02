@@ -22,8 +22,8 @@ int main(int argc, char *argv[]) {
     fprintf(stderr,"header:%d data:%d \n",HEADER_SIZE,DATA_SIZE);
 
     //usage
-    if (argc < 4) {
-       fprintf(stderr,"usage %s hostname port message\n", argv[0]);
+    if (argc < 5) {
+       fprintf(stderr,"usage %s hostname port message P(corrupt)\n", argv[0]);
        exit(0);
     }
 
@@ -46,6 +46,8 @@ int main(int argc, char *argv[]) {
     {
         error("failed open file"); 
     }
+
+    int pCorrupt = atoi(argv[4]);
 
     //init server address stuff
     bzero((char *) &serv_addr, sizeof(serv_addr));
@@ -99,7 +101,7 @@ int main(int argc, char *argv[]) {
         char addr[256];
         inet_ntop(AF_INET, &(serv_addr.sin_addr), addr, INET_ADDRSTRLEN);
 
-        if (prob(CORRUPT_PROB)) {
+        if (prob(pCorrupt)) {
             //corrupt packet
             fprintf(stderr, "packet was corrupted\n");
         }
