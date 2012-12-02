@@ -9,7 +9,6 @@
 #define DATAGRAM_SIZE 1000
 #define HEADER_SIZE  (2 * sizeof(short) + 2 * sizeof(int))
 #define DATA_SIZE (DATAGRAM_SIZE - HEADER_SIZE)
-#define WINDOW_SIZE 4
 #define DEBUG 1
 #define CORRUPT_PROB 10
 #define LOSS_PROB 10
