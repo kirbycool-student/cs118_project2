@@ -11,6 +11,8 @@
 #define DATA_SIZE (DATAGRAM_SIZE - HEADER_SIZE)
 #define WINDOW_SIZE 4
 #define DEBUG 1
+#define CORRUPT_PROB 10
+#define LOSS_PROB 10
 
 void error(char *msg) 
 {
@@ -44,3 +46,7 @@ void dump(struct packet * pkt)
     printf("ack: %d, fin: %d, seq: %d, size: %d \n",pkt->ack,pkt->fin,pkt->seq,pkt->size);
 }
 
+//return 1 with probability a and 0 otherwise. SEED THE RNG FIRST
+int prob( int a ) {
+  return ((rand () % 100) < a) ? 1 : 0;
+}

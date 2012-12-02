@@ -17,12 +17,17 @@ int main(int argc, char *argv[]) {
     struct sockaddr_in serv_addr;
     struct hostent *server;
 
+    srand( time(0) ); //seed the rng for probablilty stuff
+
     fprintf(stderr,"header:%d data:%d \n",HEADER_SIZE,DATA_SIZE);
+
     //usage
     if (argc < 4) {
        fprintf(stderr,"usage %s hostname port message\n", argv[0]);
        exit(0);
     }
+
+    //SOCKET INITIALIZATION
     sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock < 0) { 
         error("ERROR opening socket");
@@ -42,7 +47,7 @@ int main(int argc, char *argv[]) {
         error("failed open file"); 
     }
 
-    ///init
+    //init server address stuff
     bzero((char *) &serv_addr, sizeof(serv_addr));
     serv_addr.sin_family = AF_INET; //initialize server's address
     bcopy((char *)server->h_addr, (char *)&serv_addr.sin_addr.s_addr, server->h_length);
@@ -93,7 +98,12 @@ int main(int argc, char *argv[]) {
         char addr[256];
         inet_ntop(AF_INET, &(serv_addr.sin_addr), addr, INET_ADDRSTRLEN);
 
-        if (incoming.ack == 1) 
+        //corrupt packet
+        if (prob(CORRUPT_PROB)) {
+            fprintf(stderr, "packet was corrupted\n");
+        }
+
+        else if (incoming.ack == 1) 
         //first pkt is ack of request
         {
             fprintf (stderr, "Receiver: got ack From: %s : %d\n", addr, serv_addr.sin_port);
