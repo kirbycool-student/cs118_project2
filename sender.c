@@ -12,8 +12,6 @@
 int main(int argc, char *argv[]) {
     int sock, port, nbytes, size, base;
     struct sockaddr_in serv_addr, client_addr;
-    struct packet packets[WINDOW_SIZE];
-    char fileName[DATA_SIZE];
 
     if (argc < 3) {
          fprintf(stderr,"usage %s port CWind\n", argv[0]);
@@ -93,7 +91,7 @@ int main(int argc, char *argv[]) {
     //initialize and send the first window of packets
     base = 1;
     int k;
-    for(k = 0; k < WINDOW_SIZE; k++) {
+    for(k = 0; k < windowSize; k++) {
 
         // get the next chunk of the file
         struct packet p;
