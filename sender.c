@@ -13,7 +13,6 @@ int main(int argc, char *argv[]) {
     int sock, port, nbytes, size, base;
     struct sockaddr_in serv_addr, client_addr;
     struct packet packets[WINDOW_SIZE];
-    int acks[WINDOW_SIZE];
     char fileName[DATA_SIZE];
 
     if (argc < 2) {
@@ -91,7 +90,6 @@ int main(int argc, char *argv[]) {
     base = 1;
     int k;
     for(k = 0; k < WINDOW_SIZE; k++) {
-        acks[k] = 0;
 
         // get the next chunk of the file
         struct packet p;
@@ -172,7 +170,6 @@ int main(int argc, char *argv[]) {
             if(base <= ack.seq) {
                 for(k=0; k < WINDOW_SIZE; k++) {
                     if(packets[k].seq <= ack.seq ) {
-                        acks[k] = 0;
 
                         //get the next packet
                         struct packet p;
