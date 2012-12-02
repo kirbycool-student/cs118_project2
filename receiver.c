@@ -82,6 +82,7 @@ int main(int argc, char *argv[]) {
     initPacket(&incoming);
     initPacket(&outgoing);
     outgoing.ack = 1;
+    int cumAck = 0;    
 
     while(1) {
 
@@ -116,7 +117,7 @@ int main(int argc, char *argv[]) {
             fclose(fd);
             break;
         } 
-        else  
+        else if (incoming.seq == cumAck + 1) 
         {
             // data packet
             fprintf (stderr, "Receiver: got test message From: %s : %d\n", addr, serv_addr.sin_port);
@@ -133,7 +134,8 @@ int main(int argc, char *argv[]) {
             {
                 error("sendto failed");
             }    
-
+            cumAck++;
+            
             //print diagnostic to console
             char addr[256];
             inet_ntop(AF_INET, &(serv_addr.sin_addr), addr, INET_ADDRSTRLEN); 
