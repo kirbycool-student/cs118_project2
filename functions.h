@@ -28,19 +28,18 @@ struct packet
 
 void initPacket(struct packet * pkt)
 {
-    if (DEBUG) {
-
-        pkt->ack = 0;
-        pkt->fin = 0;
-        pkt->seq = 0;
-        pkt->size = 0;
-        memset(pkt->data,0,DATA_SIZE);
-    }
+    pkt->ack = 0;
+    pkt->fin = 0;
+    pkt->seq = 0;
+    pkt->size = 0;
+    memset(pkt->data,0,DATA_SIZE);
 }
 
 void dump(struct packet * pkt)
 {
-    printf("ack: %d, fin: %d, seq: %d, size: %d \n",pkt->ack,pkt->fin,pkt->seq,pkt->size);
+    if (DEBUG) {
+        printf("ack: %d, fin: %d, seq: %d, size: %d \n",pkt->ack,pkt->fin,pkt->seq,pkt->size);
+    }
 }
 
 //return 1 with probability a and 0 otherwise. SEED THE RNG FIRST

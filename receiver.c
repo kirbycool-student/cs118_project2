@@ -101,11 +101,8 @@ int main(int argc, char *argv[]) {
         char addr[256];
         inet_ntop(AF_INET, &(serv_addr.sin_addr), addr, INET_ADDRSTRLEN);
 
-        if (prob(pCorrupt)) {
-            //corrupt packet
-            fprintf(stderr, "packet was corrupted\n");
-        }
-        else if (incoming.ack == 1) 
+        
+        if (incoming.ack == 1) 
         {
             //first pkt is ack of request
             fprintf (stderr, "Receiver: got ack From: %s : %d\n", addr, serv_addr.sin_port);
@@ -119,24 +116,36 @@ int main(int argc, char *argv[]) {
             fclose(fd);
             break;
         } 
-        else if (incoming.seq == cumAck + 1) 
+        else  
         {
             // data packet
             fprintf (stderr, "Receiver: got test message From: %s : %d\n", addr, serv_addr.sin_port);
             dump(&incoming);
 
-            //write data to file 
-            fwrite(incoming.data,1,incoming.size,fd);  
+            if (prob(pCorrupt)) {
+                //corrupt packet
+                fprintf(stderr, "packet was corrupted\n");
+                outgoing.seq = cumAck;
+            }
+            else if (incoming.seq == cumAck + 1) {
+                //write data to file 
+                fwrite(incoming.data,1,incoming.size,fd);  
+                cumAck++;
+                outgoing.seq = incoming.seq;
+            }
+            else {
+                //out of order packet
+                fprintf(stderr, "packet is out of order\n");
+                outgoing.seq = cumAck;
+            }
 
             //send corresponding ack 
-            outgoing.seq = incoming.seq;
             int size = sizeof(serv_addr);
             if( nbytes = sendto (sock, &outgoing, DATAGRAM_SIZE, 0,
                                 (struct sockaddr *) &serv_addr , size) < 0)
             {
                 error("sendto failed");
             }    
-            cumAck++;
             
             //print diagnostic to console
             char addr[256];
