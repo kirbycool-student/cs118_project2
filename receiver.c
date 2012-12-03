@@ -119,7 +119,7 @@ int main(int argc, char *argv[]) {
             fclose(fd);
             break;
         } 
-        else //if (incoming.seq == cumAck + 1) 
+        else if (incoming.seq == cumAck + 1) 
         {
             // data packet
             fprintf (stderr, "Receiver: got test message From: %s : %d\n", addr, serv_addr.sin_port);

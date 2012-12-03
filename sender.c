@@ -12,6 +12,8 @@
 #include "functions.h"
 
 int main(int argc, char *argv[]) {
+    
+    ///////////////*****SETUP****/////////////////
     int sock, port, nbytes, size, base;
     struct sockaddr_in serv_addr, client_addr;
 
@@ -50,6 +52,7 @@ int main(int argc, char *argv[]) {
     int acks[windowSize];
     char fileName[DATA_SIZE];
 
+    ///////////////*****HANDSHAKE****/////////////////
     //wait for connections
     struct packet handshake;
 
@@ -104,7 +107,7 @@ int main(int argc, char *argv[]) {
         error("failed open file"); 
     }
 
-    //initialize and send the first window of packets
+    ////////////initial window of packets////////////
     base = 1;
     int k;
     for(k = 0; k < windowSize; k++) {
