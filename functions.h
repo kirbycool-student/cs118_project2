@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <signal.h>
 #include <sys/types.h>   // definitions of a number of data types used in socket.h and netinet/in.h
 #include <sys/socket.h>  // definitions of structures needed for sockets, e.g. sockaddr
 #include <netinet/in.h>  // constants and structures needed for internet domain addresses, e.g. sockaddr_in
@@ -10,6 +11,7 @@
 #define HEADER_SIZE  (2 * sizeof(short) + 2 * sizeof(int))
 #define DATA_SIZE (DATAGRAM_SIZE - HEADER_SIZE)
 #define DEBUG 1
+#define TIMEOUT 2 //in seconds
 
 void error(char *msg) 
 {
@@ -45,4 +47,17 @@ void dump(struct packet * pkt)
 //return 1 with probability a and 0 otherwise. SEED THE RNG FIRST
 int prob( int a ) {
   return ((rand () % 100) < a) ? 1 : 0;
+}
+
+//signal timeout stuff
+volatile sig_atomic_t timeout = 0;
+
+void catch_alarm (int sig) /* signal handler */
+{
+    timeout = 1;
+    signal (sig, catch_alarm);
+}
+
+void resetTimeout() {
+    timeout = 0;
 }
