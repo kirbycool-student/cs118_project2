@@ -22,8 +22,8 @@ int main(int argc, char *argv[]) {
     fprintf(stderr,"header:%d data:%d \n",HEADER_SIZE,DATA_SIZE);
 
     //usage
-    if (argc < 5) {
-       fprintf(stderr,"usage %s hostname port message P(corrupt)\n", argv[0]);
+    if (argc < 6) {
+       fprintf(stderr,"usage %s hostname port message Pl Pc \n", argv[0]);
        exit(0);
     }
 
@@ -48,6 +48,7 @@ int main(int argc, char *argv[]) {
     }
 
     int pCorrupt = atoi(argv[4]);
+    int pLoss= atoi(argv[5]);
 
     //init server address stuff
     bzero((char *) &serv_addr, sizeof(serv_addr));
@@ -119,12 +120,12 @@ int main(int argc, char *argv[]) {
         else  
         {
             // data packet
-            fprintf (stderr, "Receiver: got test message From: %s : %d\n", addr, serv_addr.sin_port);
+            // fprintf (stderr, "Receiver: got test message From: %s : %d\n", addr, serv_addr.sin_port);
             dump(&incoming);
 
-            if (prob(pCorrupt)) {
+            if (prob(pCorrupt) || prob(pLoss)) {
                 //corrupt packet
-                fprintf(stderr, "packet was corrupted\n");
+                fprintf(stderr, "packet was corrupted or lost\n");
                 outgoing.seq = cumAck;
             }
             else if (incoming.seq == cumAck + 1) {
@@ -150,7 +151,7 @@ int main(int argc, char *argv[]) {
             //print diagnostic to console
             char addr[256];
             inet_ntop(AF_INET, &(serv_addr.sin_addr), addr, INET_ADDRSTRLEN); 
-            printf ("Receiver: Sent ack to: %s : %d \n", addr, serv_addr.sin_port);
+            // printf ("Receiver: Sent ack to: %s : %d \n", addr, serv_addr.sin_port);
             dump(&outgoing);
         }
     }   

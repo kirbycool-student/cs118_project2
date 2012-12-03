@@ -11,7 +11,7 @@
 #define HEADER_SIZE  (2 * sizeof(short) + 2 * sizeof(int))
 #define DATA_SIZE (DATAGRAM_SIZE - HEADER_SIZE)
 #define DEBUG 1
-#define TIMEOUT 100 //in miliseconds
+#define TIMEOUT 5000 //in microseconds
 
 void error(char *msg) 
 {
@@ -59,12 +59,12 @@ void catch_alarm (int sig) /* signal handler */
     signal (sig, catch_alarm);
 }
 
-unsigned int setTimeout(unsigned int miliseconds) {
+unsigned int setTimeout(unsigned int microseconds) {
     timeout = 0;
     struct itimerval old, current;
     current.it_interval.tv_usec = 0;
     current.it_interval.tv_sec = 0;
-    current.it_value.tv_usec = (long int) miliseconds; 
+    current.it_value.tv_usec = (long int) microseconds; 
     current.it_value.tv_sec = 0;
     if (setitimer (ITIMER_REAL, &current, &old) < 0)
         return 0;

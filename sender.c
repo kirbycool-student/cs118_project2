@@ -20,8 +20,8 @@ int main(int argc, char *argv[]) {
     //initialize the alarm signal
     signal(SIGALRM, catch_alarm);
     
-    if (argc < 3) {
-         fprintf(stderr,"usage %s port CWind\n", argv[0]);
+    if (argc < 5) {
+         fprintf(stderr,"usage %s port CWind Pl Pc\n", argv[0]);
          exit(1);
     }
 
@@ -50,7 +50,12 @@ int main(int argc, char *argv[]) {
     int windowSize = atoi(argv[2]);
     struct packet packets[windowSize];
     int acks[windowSize];
-    char fileName[DATA_SIZE];
+    char fileName[DATA_SIZE];   
+    int packetsSent = 0;
+
+    int pCorrupt = atoi(argv[3]);
+    int pLoss= atoi(argv[4]);
+
 
     ///////////////*****HANDSHAKE****/////////////////
     //wait for connections
@@ -128,10 +133,11 @@ int main(int argc, char *argv[]) {
         {
             error("sendto failed");
         }
+        packetsSent++;
 
         //print diagnostic to console
         inet_ntop(AF_INET, &(client_addr.sin_addr), addr, INET_ADDRSTRLEN); 
-        printf ("Sender: Sent test message to: %s : %d :\n", addr, client_addr.sin_port);
+        //printf ("Sender: Sent test message to: %s : %d :\n", addr, client_addr.sin_port);
         dump(&packets[k]);
 
         if(feof(fd) || ferror(fd) ) {
@@ -166,22 +172,6 @@ int main(int argc, char *argv[]) {
 
         //if file is empty or done reading, terminate connection
         if(feof(fd)) {
-            fclose(fd);
-            struct packet terminate;
-            initPacket(&terminate);
-            terminate.fin = 1;
-            //send the packet
-            size = sizeof(client_addr);
-            if( nbytes = sendto (sock, &terminate, DATAGRAM_SIZE, 0,
-                    (struct sockaddr *) &client_addr , size) < 0)
-            {
-                error("sendto failed");
-            }
-            //print diagnostic to console
-            inet_ntop(AF_INET, &(client_addr.sin_addr), addr, INET_ADDRSTRLEN); 
-            printf ("Sender: Sent termination: To: %s : %d \n", addr, client_addr.sin_port);
-            dump(&terminate);
-            break;
         }
 
         struct packet ack;
@@ -199,19 +189,42 @@ int main(int argc, char *argv[]) {
             error("recvfrom failed");
         }
 
+        if (prob(pCorrupt) || prob(pLoss)) {
+            fprintf(stderr, "packet was corrupted or lost\n");
+            continue;
+        }
+
         //print diagnostic to console
         char addr[256];
         inet_ntop(AF_INET, &(client_addr.sin_addr), addr, INET_ADDRSTRLEN);
         if( ack.ack == 1)
         {
-            fprintf (stderr, "Sender: got ack From: %s : %d\n", addr, client_addr.sin_port);
+            //fprintf (stderr, "Sender: got ack From: %s : %d\n", addr, client_addr.sin_port);
             dump(&ack);
+            
+            if( feof(fd) && ack.seq == packetsSent) {
+                fclose(fd);
+                struct packet terminate;
+                initPacket(&terminate);
+                terminate.fin = 1;
+                //send the packet
+                size = sizeof(client_addr);
+                if( nbytes = sendto (sock, &terminate, DATAGRAM_SIZE, 0,
+                        (struct sockaddr *) &client_addr , size) < 0)
+                {
+                    error("sendto failed");
+                }    
+                //print diagnostic to console
+                inet_ntop(AF_INET, &(client_addr.sin_addr), addr, INET_ADDRSTRLEN); 
+                printf ("Sender: Sent termination: To: %s : %d \n", addr, client_addr.sin_port);
+                dump(&terminate);
+                break;
+            }        
 
             // update the packets in the window and send new packets
             if(base <= ack.seq) {
                 for(k=0; k < windowSize; k++) {
                     if(packets[k].seq <= ack.seq ) {
-                        
                         if(feof(fd) || ferror(fd) ) {
                             //done reading file
                             printf("done reading file\n");
@@ -232,12 +245,11 @@ int main(int argc, char *argv[]) {
                         {
                             error("sendto failed");
                         }
-
-                        
+                        packetsSent++;
 
                         //print diagnostic to console
                         inet_ntop(AF_INET, &(client_addr.sin_addr), addr, INET_ADDRSTRLEN); 
-                        printf ("Sender: Sent test message To: %s : %d \n", addr, client_addr.sin_port);
+                        //printf ("Sender: Sent test message To: %s : %d \n", addr, client_addr.sin_port);
                         dump(&packets[k]);
 
                         base++;
