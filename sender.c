@@ -25,12 +25,39 @@ int main(int argc, char *argv[]) {
          exit(1);
     }
 
+    int windowSize = atoi(argv[2]);
+    struct packet packets[windowSize];
+    int acks[windowSize];
+    char fileName[DATA_SIZE];   
+    int packetsSent = 0;
+
+    int pCorrupt = atoi(argv[3]);
+    int pLoss= atoi(argv[4]);
+
     sock = socket(AF_INET, SOCK_DGRAM, 0);
 
-    //set socket to not block
+    //set socket to not block and set the buffer size
     int flags = fcntl(sock, F_GETFL);
     fcntl(sock, F_SETFL, flags | O_NONBLOCK);
 
+    /*
+    int sendbuff;
+    int optlen = sizeof(sendbuff);
+    if( getsockopt(sock, SOL_SOCKET, SO_SNDBUF, &sendbuff, &optlen) != 0 ) {
+        error("get sock opt error");
+    }
+    printf("sndbuf: %d\n", sendbuff);
+
+    sendbuff = DATAGRAM_SIZE * windowSize * 10 / 2;
+    if( setsockopt(sock, SOL_SOCKET, SO_SNDBUF, &sendbuff, optlen) != 0 ) {
+        error("get sock opt error");
+    }
+
+    if( getsockopt(sock, SOL_SOCKET, SO_SNDBUF, &sendbuff, &optlen) != 0 ) {
+        error("get sock opt error");
+    }
+    printf("sndbuf: %d\n", sendbuff);
+    */
 
     if (sock < 0) 
         error("ERROR opening socket");
@@ -47,14 +74,7 @@ int main(int argc, char *argv[]) {
         error("bind error");
     }
  
-    int windowSize = atoi(argv[2]);
-    struct packet packets[windowSize];
-    int acks[windowSize];
-    char fileName[DATA_SIZE];   
-    int packetsSent = 0;
 
-    int pCorrupt = atoi(argv[3]);
-    int pLoss= atoi(argv[4]);
 
 
     ///////////////*****HANDSHAKE****/////////////////
@@ -92,11 +112,20 @@ int main(int argc, char *argv[]) {
     handshake.ack = 1;  
  
     size = sizeof(client_addr);
-    if( nbytes = sendto (sock, &handshake, DATAGRAM_SIZE, 0,
-                    (struct sockaddr *) &client_addr , size) < 0)
-    {
-        error("sendto failed");
+    while(1) {
+        if( nbytes = sendto (sock, &handshake, DATAGRAM_SIZE, 0,
+                        (struct sockaddr *) &client_addr , size) < 0)
+        {
+                if( errno == EWOULDBLOCK ) {
+                    continue;
+                }
+                printf("error: %d\n", errno);
+                error("sendto failed");
+
+        }    
+        break;
     }
+
 
     //print diagnostic to console
     inet_ntop(AF_INET, &(client_addr.sin_addr), addr, INET_ADDRSTRLEN); 
@@ -128,10 +157,16 @@ int main(int argc, char *argv[]) {
 
         //send the packet
         size = sizeof(client_addr);
-        if( nbytes = sendto (sock, &packets[k], DATAGRAM_SIZE, 0,
+        while(1) {
+            if( nbytes = sendto (sock, &packets[k], DATAGRAM_SIZE, 0,
                 (struct sockaddr *) &client_addr , size) < 0)
-        {
-            error("sendto failed");
+            {
+                if( errno == EWOULDBLOCK ) {
+                    continue;
+                }
+                error("sendto failed");
+            }
+            break;
         }
         packetsSent++;
 
@@ -161,10 +196,16 @@ int main(int argc, char *argv[]) {
             for(k = 0; k < windowSize; k++) {
                 //send the packet
                 size = sizeof(client_addr);
-                if( nbytes = sendto (sock, &packets[k], DATAGRAM_SIZE, 0,
-                    (struct sockaddr *) &client_addr , size) < 0)
-                {
-                    error("sendto failed");
+                while(1) {
+                    if( nbytes = sendto (sock, &packets[k], DATAGRAM_SIZE, 0,
+                        (struct sockaddr *) &client_addr , size) < 0)
+                    {
+                        if( errno == EWOULDBLOCK ) {
+                            continue;
+                        }
+                        error("sendto failed");
+                    }
+                    break;
                 }
             }
             setTimeout(TIMEOUT);
@@ -209,11 +250,17 @@ int main(int argc, char *argv[]) {
                 terminate.fin = 1;
                 //send the packet
                 size = sizeof(client_addr);
-                if( nbytes = sendto (sock, &terminate, DATAGRAM_SIZE, 0,
-                        (struct sockaddr *) &client_addr , size) < 0)
-                {
-                    error("sendto failed");
-                }    
+                while(1) {    
+                    if( nbytes = sendto (sock, &terminate, DATAGRAM_SIZE, 0,
+                            (struct sockaddr *) &client_addr , size) < 0)
+                    {
+                        if( errno == EWOULDBLOCK ) {
+                            continue;
+                        }
+                        error("sendto failed");
+                    }
+                    break;
+                }
                 //print diagnostic to console
                 inet_ntop(AF_INET, &(client_addr.sin_addr), addr, INET_ADDRSTRLEN); 
                 printf ("Sender: Sent termination: To: %s : %d \n", addr, client_addr.sin_port);
@@ -223,6 +270,9 @@ int main(int argc, char *argv[]) {
 
             // update the packets in the window and send new packets
             if(base <= ack.seq) {
+                //stop the timeout alarm
+                alarm(0);
+
                 for(k=0; k < windowSize; k++) {
                     if(packets[k].seq <= ack.seq ) {
                         if(feof(fd) || ferror(fd) ) {
@@ -240,10 +290,15 @@ int main(int argc, char *argv[]) {
 
                         //send the packet
                         size = sizeof(client_addr);
-                        if( nbytes = sendto (sock, &packets[k], DATAGRAM_SIZE, 0,
-                                (struct sockaddr *) &client_addr , size) < 0)
-                        {
-                            error("sendto failed");
+                        while(1) {
+                            if( nbytes = sendto (sock, &packets[k], DATAGRAM_SIZE, 0, (struct sockaddr *) &client_addr , size) < 0)
+                            {
+                                if( errno == EWOULDBLOCK ) {
+                                    continue;
+                                }
+                                error("sendto failed");
+                            }
+                            break;
                         }
                         packetsSent++;
 

@@ -11,7 +11,7 @@
 #define HEADER_SIZE  (2 * sizeof(short) + 2 * sizeof(int))
 #define DATA_SIZE (DATAGRAM_SIZE - HEADER_SIZE)
 #define DEBUG 1
-#define TIMEOUT 5000 //in microseconds
+#define TIMEOUT 10000 //in microseconds
 
 void error(char *msg) 
 {
