@@ -19,8 +19,6 @@ int main(int argc, char *argv[]) {
 
     srand( time(0) ); //seed the rng for probablilty stuff
 
-    fprintf(stderr,"header:%d data:%d \n",HEADER_SIZE,DATA_SIZE);
-
     //usage
     if (argc < 6) {
        fprintf(stderr,"usage %s hostname port message Pl Pc \n", argv[0]);
