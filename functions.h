@@ -5,13 +5,13 @@
 #include <netinet/in.h>  // constants and structures needed for internet domain addresses, e.g. sockaddr_in
 #include <stdlib.h>
 #include <strings.h>
-#include <string.h>
+#include <sys/time.h>
 
 #define DATAGRAM_SIZE 1000
 #define HEADER_SIZE  (2 * sizeof(short) + 2 * sizeof(int))
 #define DATA_SIZE (DATAGRAM_SIZE - HEADER_SIZE)
 #define DEBUG 1
-#define TIMEOUT 2 //in seconds
+#define TIMEOUT 100 //in miliseconds
 
 void error(char *msg) 
 {
@@ -52,12 +52,23 @@ int prob( int a ) {
 //signal timeout stuff
 volatile sig_atomic_t timeout = 0;
 
+
 void catch_alarm (int sig) /* signal handler */
 {
     timeout = 1;
     signal (sig, catch_alarm);
 }
 
-void resetTimeout() {
+unsigned int setTimeout(unsigned int miliseconds) {
     timeout = 0;
+    struct itimerval old, current;
+    current.it_interval.tv_usec = 0;
+    current.it_interval.tv_sec = 0;
+    current.it_value.tv_usec = (long int) miliseconds; 
+    current.it_value.tv_sec = 0;
+    if (setitimer (ITIMER_REAL, &current, &old) < 0)
+        return 0;
+    else
+        return old.it_value.tv_sec;
 }
+

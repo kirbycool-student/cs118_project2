@@ -141,7 +141,7 @@ int main(int argc, char *argv[]) {
 
    }
    //start the timer
-   alarm(TIMEOUT);
+   setTimeout(TIMEOUT);
 
 
     ////////****** MAIN LOOP *********///////////
@@ -149,7 +149,7 @@ int main(int argc, char *argv[]) {
     // when we receive an ack, update the packet window and send out the new packets
     while(1) {
         if(timeout) {
-        //we timed out, retransmit the window
+            //we timed out, retransmit the window
             printf("packet timed out Seq: \n");
             int k;
             for(k = 0; k < windowSize; k++) {
@@ -161,7 +161,7 @@ int main(int argc, char *argv[]) {
                     error("sendto failed");
                 }
             }
-            resetTimeout();
+            setTimeout(TIMEOUT);
         }
 
         //if file is empty or done reading, terminate connection
@@ -244,7 +244,7 @@ int main(int argc, char *argv[]) {
                     }
                 }
                 //reset the timer
-                alarm(TIMEOUT);
+                setTimeout(TIMEOUT);
             }
 
 
