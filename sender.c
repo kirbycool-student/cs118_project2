@@ -151,6 +151,16 @@ int main(int argc, char *argv[]) {
         if(timeout) {
         //we timed out, retransmit the window
             printf("packet timed out Seq: \n");
+            int k;
+            for(k = 0; k < windowSize; k++) {
+                //send the packet
+                size = sizeof(client_addr);
+                if( nbytes = sendto (sock, &packets[k], DATAGRAM_SIZE, 0,
+                    (struct sockaddr *) &client_addr , size) < 0)
+                {
+                    error("sendto failed");
+                }
+            }
             resetTimeout();
         }
 
