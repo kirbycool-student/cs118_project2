@@ -7,18 +7,28 @@
 #include <sys/wait.h>	/* for the waitpid() system call */
 #include <signal.h>	/* signal name macros, and the kill() prototype */
 #include <string.h>
+#include <fcntl.h>
+#include <errno.h>
 #include "functions.h"
 
 int main(int argc, char *argv[]) {
     int sock, port, nbytes, size, base;
     struct sockaddr_in serv_addr, client_addr;
 
+    //initialize the alarm signal
+    signal(SIGALRM, catch_alarm);
+    
     if (argc < 3) {
          fprintf(stderr,"usage %s port CWind\n", argv[0]);
          exit(1);
     }
 
     sock = socket(AF_INET, SOCK_DGRAM, 0);
+
+    //set socket to not block
+    int flags = fcntl(sock, F_GETFL);
+    fcntl(sock, F_SETFL, flags | O_NONBLOCK);
+
 
     if (sock < 0) 
         error("ERROR opening socket");
@@ -46,11 +56,17 @@ int main(int argc, char *argv[]) {
     fprintf (stderr, "waiting for message \n");
 
     size = sizeof(client_addr);
-    if( nbytes = recvfrom(sock, &handshake, DATAGRAM_SIZE, 0, 
+    while(1) {
+        if( nbytes = recvfrom(sock, &handshake, DATAGRAM_SIZE, 0, 
                                 (struct sockaddr *) &client_addr,
                                  &size) < 0)
-    {
-        error("recvfrom failed");
+        {
+            if( errno == EWOULDBLOCK ) {
+                continue;
+            }
+            error("recvfrom failed");
+        }
+        break;
     }
 
     //print diagnostic to console
@@ -121,12 +137,19 @@ int main(int argc, char *argv[]) {
         }
 
    }
+   //start the timer
+   alarm(TIMEOUT);
 
 
     ////////****** MAIN LOOP *********///////////
     // wait for acks
     // when we receive an ack, update the packet window and send out the new packets
     while(1) {
+        if(timeout) {
+        //we timed out, retransmit the window
+            printf("packet timed out Seq: \n");
+            resetTimeout();
+        }
 
         //if file is empty or done reading, terminate connection
         if(feof(fd)) {
@@ -157,6 +180,9 @@ int main(int argc, char *argv[]) {
                              (struct sockaddr *) &client_addr,
                              &size) < 0)
         {
+            if( errno == EWOULDBLOCK ) {
+                continue;
+            }
             error("recvfrom failed");
         }
 
@@ -172,6 +198,12 @@ int main(int argc, char *argv[]) {
             if(base <= ack.seq) {
                 for(k=0; k < windowSize; k++) {
                     if(packets[k].seq <= ack.seq ) {
+                        
+                        if(feof(fd) || ferror(fd) ) {
+                            //done reading file
+                            printf("done reading file\n");
+                            break;
+                        }
 
                         //get the next packet
                         struct packet p;
@@ -188,10 +220,7 @@ int main(int argc, char *argv[]) {
                             error("sendto failed");
                         }
 
-                        if(feof(fd) || ferror(fd) ) {
-                            //done reading file
-                            break;
-                        }
+                        
 
                         //print diagnostic to console
                         inet_ntop(AF_INET, &(client_addr.sin_addr), addr, INET_ADDRSTRLEN); 
@@ -201,6 +230,8 @@ int main(int argc, char *argv[]) {
                         base++;
                     }
                 }
+                //reset the timer
+                alarm(TIMEOUT);
             }
 
 
