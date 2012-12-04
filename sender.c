@@ -235,9 +235,10 @@ int main(int argc, char *argv[]) {
             continue;
         }
 
-        //print diagnostic to console
         char addr[256];
         inet_ntop(AF_INET, &(client_addr.sin_addr), addr, INET_ADDRSTRLEN);
+        
+        /////********* PACKET IS ACK *********////
         if( ack.ack == 1)
         {
             //fprintf (stderr, "Sender: got ack From: %s : %d\n", addr, client_addr.sin_port);
