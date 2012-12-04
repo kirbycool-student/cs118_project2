@@ -40,27 +40,8 @@ int main(int argc, char *argv[]) {
     int flags = fcntl(sock, F_GETFL);
     fcntl(sock, F_SETFL, flags | O_NONBLOCK);
 
-    /*
-    int sendbuff;
-    int optlen = sizeof(sendbuff);
-    if( getsockopt(sock, SOL_SOCKET, SO_SNDBUF, &sendbuff, &optlen) != 0 ) {
-        error("get sock opt error");
-    }
-    printf("sndbuf: %d\n", sendbuff);
-
-    sendbuff = DATAGRAM_SIZE * windowSize * 10 / 2;
-    if( setsockopt(sock, SOL_SOCKET, SO_SNDBUF, &sendbuff, optlen) != 0 ) {
-        error("get sock opt error");
-    }
-
-    if( getsockopt(sock, SOL_SOCKET, SO_SNDBUF, &sendbuff, &optlen) != 0 ) {
-        error("get sock opt error");
-    }
-    printf("sndbuf: %d\n", sendbuff);
-    */
-
     if (sock < 0) 
-        error("ERROR opening socket");
+    error("ERROR opening socket");
 
     bzero((char *) &serv_addr, sizeof(serv_addr));
     port = atoi(argv[1]);
@@ -73,9 +54,6 @@ int main(int argc, char *argv[]) {
     if ( bind(sock, (struct sockaddr*) &serv_addr, (socklen_t) size) < 0) {
         error("bind error");
     }
- 
-
-
 
     ///////////////*****HANDSHAKE****/////////////////
     //wait for connections
@@ -172,7 +150,7 @@ int main(int argc, char *argv[]) {
 
         //print diagnostic to console
         inet_ntop(AF_INET, &(client_addr.sin_addr), addr, INET_ADDRSTRLEN); 
-        //printf ("Sender: Sent test message to: %s : %d :\n", addr, client_addr.sin_port);
+        printf ("Sender: Sent datagram to: %s : %d :\n", addr, client_addr.sin_port);
         dump(&packets[k]);
 
         if(feof(fd) || ferror(fd) ) {
@@ -241,7 +219,7 @@ int main(int argc, char *argv[]) {
         /////********* PACKET IS ACK *********////
         if( ack.ack == 1)
         {
-            //fprintf (stderr, "Sender: got ack From: %s : %d\n", addr, client_addr.sin_port);
+            fprintf (stderr, "Sender: got ack From: %s : %d\n", addr, client_addr.sin_port);
             dump(&ack);
             
             if( feof(fd) && ack.seq == packetsSent) {
@@ -305,7 +283,7 @@ int main(int argc, char *argv[]) {
 
                         //print diagnostic to console
                         inet_ntop(AF_INET, &(client_addr.sin_addr), addr, INET_ADDRSTRLEN); 
-                        //printf ("Sender: Sent test message To: %s : %d \n", addr, client_addr.sin_port);
+                        printf ("Sender: Sent datagram To: %s : %d \n", addr, client_addr.sin_port);
                         dump(&packets[k]);
 
                         base++;
