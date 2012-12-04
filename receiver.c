@@ -123,8 +123,8 @@ int main(int argc, char *argv[]) {
 
             if (prob(pCorrupt) || prob(pLoss)) {
                 //corrupt packet
-                fprintf(stderr, "packet was corrupted or lost\n");
-                outgoing.seq = cumAck;
+                printf("packet was corrupted or lost\n");
+                continue;
             }
             else if (incoming.seq == cumAck + 1) {
                 //write data to file 
@@ -134,7 +134,7 @@ int main(int argc, char *argv[]) {
             }
             else {
                 //out of order packet
-                fprintf(stderr, "packet is out of order\n");
+                printf("packet is out of order\n");
                 outgoing.seq = cumAck;
             }
 
