@@ -124,7 +124,7 @@ int main(int argc, char *argv[]) {
             if (prob(pCorrupt) || prob(pLoss)) {
                 //corrupt packet
                 printf("packet was corrupted or lost\n");
-                outgoing.seq = cumAck;
+                continue;
             }
             else if (incoming.seq == cumAck + 1) {
                 //write data to file 

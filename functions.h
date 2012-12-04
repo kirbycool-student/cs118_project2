@@ -7,7 +7,7 @@
 #include <strings.h>
 #include <sys/time.h>
 
-#define DATAGRAM_SIZE 1024 * 10
+#define DATAGRAM_SIZE 1024
 #define HEADER_SIZE  (2 * sizeof(short) + 2 * sizeof(int))
 #define DATA_SIZE (DATAGRAM_SIZE - HEADER_SIZE)
 #define DEBUG 1
